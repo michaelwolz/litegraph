@@ -68,8 +68,8 @@ func getRandomVertices(v int) (int, int) {
 	var v1, v2 int
 
 	for v1 == v2 {
-		v1 = rand.Intn(v - 1)
-		v2 = rand.Intn(v - 1)
+		v1 = rand.Intn(v)
+		v2 = rand.Intn(v)
 	}
 
 	return v1, v2
@@ -91,10 +91,19 @@ func (g *Graph) ConnectAll() {
 func (g *Graph) CalculateShortestPaths() {
 	start := time.Now()
 
+	fmt.Printf("    | ")
+	for i := 0; i < g.Vertices-1; i++ {
+		fmt.Printf("  %d   | ", i)
+	}
+	fmt.Printf("\n")
+
 	for i := 0; i < g.Vertices; i++ {
+		fmt.Printf("| %d | ", i)
 		for j := 0; j < i; j++ {
-			g.calculateShortestPath(i, j)
+			v, hops := g.calculateShortestPath(i, j)
+			fmt.Printf("%d (%d) | ", v, hops)
 		}
+		fmt.Printf("\n")
 	}
 
 	elapsed := time.Since(start)
@@ -103,40 +112,33 @@ func (g *Graph) CalculateShortestPaths() {
 
 // CalculateShortestPath calculates the shortest path between two given vertices
 // using breadth first search
-func (g *Graph) calculateShortestPath(v1, v2 int) {
+func (g *Graph) calculateShortestPath(v1, v2 int) (int, int) {
 	var queue = []int{}
 	isVisited := make([]bool, g.Vertices)
 	isVisited[v1] = true
 	counter := 0
 
-	fmt.Printf("### Searching for shortes path betweed %d and %d ###\n", v1, v2)
+	//fmt.Printf("### Searching for shortes path betweed %d and %d ###\n", v1, v2)
 
-	//add v1 to queue
 	queue = append(queue, v1)
-
-BFS:
 	for len(queue) > 0 {
 		v := queue[0]
 		counter++
-
 		for i := 0; i < g.Vertices; i++ {
 			if v != i && g.AdjMatrix[getIndex(v, i)] == 1 {
 				if i == v2 {
-					fmt.Printf("Found after %d hop(s) at vertice %d!\n\n", counter, v)
-					break BFS
+					//fmt.Printf("Found after %d hop(s) at vertice %d!\n\n", counter, v)
+					return v, counter
 				} else if !isVisited[i] {
 					isVisited[i] = true
 					queue = append(queue, i)
 				}
 			}
 		}
-
 		queue = queue[1:]
 	}
-}
 
-func (g *Graph) areConnected(v1, v2 int) bool {
-	return g.AdjMatrix[getIndex(v1, v2)] == 1
+	return 0, 0
 }
 
 // PrintAdjMatrix prints out the adjacency matrix of the graph
