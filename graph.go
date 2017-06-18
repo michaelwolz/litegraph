@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
+	"time"
 )
 
 // Graph -- Graph type with adjacency matrix
@@ -85,6 +87,58 @@ func (g *Graph) ConnectAll() {
 	}
 }
 
+// CalculateShortestPaths calculates the shortest paths between all vertices
+func (g *Graph) CalculateShortestPaths() {
+	start := time.Now()
+
+	for i := 0; i < g.Vertices; i++ {
+		for j := 0; j < i; j++ {
+			g.calculateShortestPath(i, j)
+		}
+	}
+
+	elapsed := time.Since(start)
+	log.Printf("Calculation of shortest paths took %s", elapsed)
+}
+
+// CalculateShortestPath calculates the shortest path between two given vertices
+// using breadth first search
+func (g *Graph) calculateShortestPath(v1, v2 int) {
+	var queue = []int{}
+	isVisited := make([]bool, g.Vertices)
+	isVisited[v1] = true
+	counter := 0
+
+	fmt.Printf("### Searching for shortes path betweed %d and %d ###\n", v1, v2)
+
+	//add v1 to queue
+	queue = append(queue, v1)
+
+BFS:
+	for len(queue) > 0 {
+		v := queue[0]
+		counter++
+
+		for i := 0; i < g.Vertices; i++ {
+			if v != i && g.AdjMatrix[getIndex(v, i)] == 1 {
+				if i == v2 {
+					fmt.Printf("Found after %d hop(s) at vertice %d!\n\n", counter, v)
+					break BFS
+				} else if !isVisited[i] {
+					isVisited[i] = true
+					queue = append(queue, i)
+				}
+			}
+		}
+
+		queue = queue[1:]
+	}
+}
+
+func (g *Graph) areConnected(v1, v2 int) bool {
+	return g.AdjMatrix[getIndex(v1, v2)] == 1
+}
+
 // PrintAdjMatrix prints out the adjacency matrix of the graph
 // TODO: Fix visualization, atm first row and last column are missing
 func (g *Graph) PrintAdjMatrix() {
@@ -96,9 +150,8 @@ func (g *Graph) PrintAdjMatrix() {
 		}
 		fmt.Printf("\n")
 	}
+	fmt.Printf("\nArray: %v\n", g.AdjMatrix)
 	fmt.Print("\n################################\n\n")
-
-	fmt.Println(g.AdjMatrix)
 }
 
 // GenerateJSONGraph outputs the graph to a file in JSON-Format
@@ -124,16 +177,6 @@ func (g *Graph) ReadJSONGraph(path string) {
 	check(err)
 
 	json.Unmarshal(dat, &g)
-}
-
-// CalculateShortestPaths calculates the shortest paths between all vertices
-func (g *Graph) CalculateShortestPaths() {
-
-}
-
-// CalculateShortestPath calculates the shortest path between two given vertices
-func (g *Graph) CalculateShortestPath(v1, v2 int) {
-
 }
 
 //helper functions
