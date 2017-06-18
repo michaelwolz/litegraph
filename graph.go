@@ -6,14 +6,14 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
-	"strings"
 )
 
 // Graph -- Graph type with adjacency matrix
 type Graph struct {
 	vertices  []int
-	adjMatrix [][]uint8
+	AdjMatrix []uint8
 }
 
 // Init -- Initializes a graph with v vertices
@@ -24,10 +24,7 @@ func (g *Graph) Init(v int) {
 	}
 
 	// initialize adjacency matrix
-	g.adjMatrix = make([][]uint8, v-1)
-	for i := range g.adjMatrix {
-		g.adjMatrix[i] = make([]uint8, v-1)
-	}
+	g.AdjMatrix = make([]uint8, v*(v-1)/2)
 }
 
 // AddVertex adds a vertex to the graph
@@ -37,18 +34,24 @@ func (g *Graph) AddVertex(ID int) {
 
 // AddEdge adds an edge from v1 to v2 to the graph (in the adjacency matrix)
 func (g *Graph) AddEdge(v1, v2 int) {
-	v1, v2 = minMax(v1, v2)
-	g.adjMatrix[v1][v2] = 1
+	if v1 != v2 { // we don't allow loops at this point
+		g.AdjMatrix[v1+v2-1] = 1
+	}
 }
 
 // PrintAdjMatrix prints out the adjacency matrix of the graph
 // TODO: Fix visualization, atm first row and last coloum are missing
 func (g *Graph) PrintAdjMatrix() {
-	fmt.Print("\n##### GRAPH ADJACENCY MATRIX #####\n\n")
+	fmt.Println(g.AdjMatrix)
+	fmt.Print("\n#### GRAPH ADJACENCY MATRIX ####\n\n")
 	for i := 0; i < len(g.vertices)-1; i++ {
-		fmt.Printf("(%d) %v\n", i+1, g.adjMatrix[i])
+		fmt.Printf("(%d) ", i+1)
+		for j := 0; j <= i; j++ {
+			fmt.Printf("%v ", g.AdjMatrix[i+j])
+		}
+		fmt.Printf("\n")
 	}
-	fmt.Print("\n##################################\n\n")
+	fmt.Print("\n################################\n\n")
 }
 
 // GenerateJSONGraph outputs the graph to a file in JSON-Format
@@ -68,29 +71,42 @@ func (g *Graph) GenerateJSONGraph(path string) {
 	fmt.Print("JSON-Data written to file: ./graph.json\n\n")
 }
 
-// MarshalJSON -- Needed to define this function, because json.Marschal
-// messes up uint8 values
-func (g *Graph) MarshalJSON() ([]byte, error) {
-	var array string
-	if g.adjMatrix == nil {
-		array = "null"
-	} else {
-		array = strings.Join(strings.Fields(fmt.Sprintf("%d", g.adjMatrix)), ",")
-	}
-	jsonResult := fmt.Sprintf(`{"adjMatrix":%s}`, array)
-	return []byte(jsonResult), nil
+// ReadJSONGraph reads in graph from JSON-File
+func (g *Graph) ReadJSONGraph(path string) {
+	dat, err := ioutil.ReadFile(path)
+	check(err)
+
+	json.Unmarshal(dat, &g)
+	fmt.Println(g.AdjMatrix)
 }
+
+//
+// // MarshalJSON -- Needed to define this function, because json.Marschal
+// // messes up uint8 values
+// func (g *Graph) MarshalJSON() ([]byte, error) {
+// 	var array string
+// 	if g.AdjMatrix == nil {
+// 		array = "null"
+// 	} else {
+// 		array = strings.Join(strings.Fields(fmt.Sprintf("%d", g.AdjMatrix)), ",")
+// 	}
+// 	jsonResult := fmt.Sprintf(`{"AdjMatrix":%s}`, array)
+// 	return []byte(jsonResult), nil
+// }
+//
+// // UnmarshalJSON -- Needed to define this function, because json.Marschal
+// func (g *Graph) UnmarshalJSON([]byte) {
+// 	var array string
+// 	if g.AdjMatrix == nil {
+// 		array = "null"
+// 	} else {
+// 		array = strings.Join(strings.Fields(fmt.Sprintf("%d", g.AdjMatrix)), ",")
+// 	}
+// 	jsonResult := fmt.Sprintf(`{"AdjMatrix":%s}`, array)
+// 	return []byte(jsonResult), nil
+// }
 
 //helper functions
-
-//minMax is needed to build/read the adjacency matrix of the graph
-func minMax(v1, v2 int) (int, int) {
-	// v1 - 1, because we don't have a first row! (lower triangular matrix)
-	if v1 > v2 {
-		return v1 - 1, v2
-	}
-	return v2 - 1, v1
-}
 
 func check(e error) {
 	if e != nil {
